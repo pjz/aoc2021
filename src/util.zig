@@ -11,9 +11,11 @@ pub const gpa = &gpa_impl.allocator;
 
 // Add utility functions here
 
-
 // Useful stdlib functions
 const tokenize = std.mem.tokenize;
+pub fn strtok(buffer: []const u8, delimiters: []const u8) std.mem.TokenIterator(u8) {
+    return tokenize(u8, buffer, delimiters);
+}
 const split = std.mem.split;
 const indexOf = std.mem.indexOfScalar;
 const indexOfAny = std.mem.indexOfAny;
