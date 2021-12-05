@@ -43,16 +43,10 @@ const Line = struct {
             if (it.cur) |cur| {
                 var newx: u32 = cur.x;
                 var newy: u32 = cur.y;
-                if (cur.x < dest.x) {
-                    newx += 1;
-                } else if (cur.x > dest.x) {
-                    newx -= 1;
-                }
-                if (cur.y < dest.y) {
-                    newy += 1;
-                } else if (cur.y > dest.y) {
-                    newy -= 1;
-                }
+                if (cur.x != dest.x)
+                    newx = if (cur.x < dest.x) newx + 1 else newx - 1;
+                if (cur.y != dest.y)
+                    newy = if (cur.y < dest.y) newy + 1 else newy - 1;
                 if ((newx != cur.x) or (newy != cur.y)) {
                     it.cur = Point.init(newx, newy);
                 } else {
@@ -97,6 +91,7 @@ fn floor_raise(map: *FloorMap, pt: Point) !void {
 
 pub fn main() !void {
     print("starting\n", .{});
+    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     var allocator = &arena.allocator;
 
