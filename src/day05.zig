@@ -11,8 +11,113 @@ const gpa = util.gpa;
 
 const data = @embedFile("../data/day05.txt");
 
+const Point = struct {
+    x: u32,
+    y: u32,
+    pub fn init(x: u32, y: u32) Point {
+        return Point{ .x = x, .y = y };
+    }
+    pub fn from_str(s: []const u8) !Point {
+        var iter = tokenize(u8, s, " ,");
+        return Point.init(
+            try parseInt(u32, iter.next().?, 10),
+            try parseInt(u32, iter.next().?, 10),
+        );
+    }
+};
+
+const Line = struct {
+    const Self = @This();
+    a: Point,
+    b: Point,
+    pub fn init(a: Point, b: Point) Line {
+        return Line{ .a = a, .b = b };
+    }
+    //    pub fn iterator(self: @This()) Iterator {
+    //        return .{ .line = self };
+    //    };
+    //
+    pub const Iterator = struct {
+        line: *const Self,
+        cur: ?Point = null,
+        started: bool = false,
+        pub fn next(it: *Iterator) ?Point {
+            var dest = it.line.b;
+            if (it.cur) |cur| {
+                if (cur.x == dest.x) {
+                    if (cur.y < dest.y) {
+                        it.cur = Point.init(cur.x, cur.y + 1);
+                    } else if (cur.y > dest.y) {
+                        it.cur = Point.init(cur.x, cur.y - 1);
+                    } else {
+                        it.cur = null;
+                    }
+                } else if (cur.y == dest.y) {
+                    if (cur.x < dest.x) {
+                        it.cur = Point.init(cur.x + 1, cur.y);
+                    } else if (cur.x > dest.x) {
+                        it.cur = Point.init(cur.x - 1, cur.y);
+                    } else {
+                        it.cur = null;
+                    }
+                }
+            } else if (!it.started) {
+                it.cur = it.line.a;
+            }
+            return it.cur;
+        }
+    };
+
+    pub fn iterator(self: Self) Iterator {
+        if ((self.a.x != self.b.x) and (self.a.y != self.b.y))
+            return .{ .line = &Line.init(self.a, self.a), .started = true }; // ignore the line
+        return .{ .line = &self };
+    }
+
+    pub fn from_str(s: []const u8) !Line {
+        var coord_splitter = split(u8, s, " -> ");
+        return Line.init(
+            try Point.from_str(coord_splitter.next().?),
+            try Point.from_str(coord_splitter.next().?),
+        );
+    }
+};
+
+const Height = u2;
+const FloorMap = Map(Point, Height);
+
+fn floor_raise(map: *FloorMap, pt: Point) !void {
+    var height = map.get(pt) orelse 0;
+    height += 1;
+    if (height > 2) return;
+    try map.put(pt, height);
+}
+
 pub fn main() !void {
-    
+    print("starting\n", .{});
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var allocator = &arena.allocator;
+
+    var floor: FloorMap = FloorMap.init(allocator);
+
+    print("reading\n", .{});
+    var lines = util.strtok(data, "\n");
+    while (lines.next()) |line_text| {
+        var line = try Line.from_str(line_text);
+        var iter = line.iterator();
+        while (iter.next()) |pt| {
+            try floor_raise(&floor, pt);
+        }
+    }
+    print("counting\n", .{});
+    var total: u64 = 0;
+    var floor_counter = floor.valueIterator();
+    while (floor_counter.next()) |val| {
+        if (val.* >= 2) {
+            total += 1;
+        }
+    }
+    print("part 1: {d}\n", .{total});
 }
 
 // Useful stdlib functions
