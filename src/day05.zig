@@ -33,10 +33,7 @@ const Line = struct {
     pub fn init(a: Point, b: Point) Line {
         return Line{ .a = a, .b = b };
     }
-    //    pub fn iterator(self: @This()) Iterator {
-    //        return .{ .line = self };
-    //    };
-    //
+
     pub const Iterator = struct {
         line: *const Self,
         cur: ?Point = null,
@@ -44,22 +41,22 @@ const Line = struct {
         pub fn next(it: *Iterator) ?Point {
             var dest = it.line.b;
             if (it.cur) |cur| {
-                if (cur.x == dest.x) {
-                    if (cur.y < dest.y) {
-                        it.cur = Point.init(cur.x, cur.y + 1);
-                    } else if (cur.y > dest.y) {
-                        it.cur = Point.init(cur.x, cur.y - 1);
-                    } else {
-                        it.cur = null;
-                    }
-                } else if (cur.y == dest.y) {
-                    if (cur.x < dest.x) {
-                        it.cur = Point.init(cur.x + 1, cur.y);
-                    } else if (cur.x > dest.x) {
-                        it.cur = Point.init(cur.x - 1, cur.y);
-                    } else {
-                        it.cur = null;
-                    }
+                var newx: u32 = cur.x;
+                var newy: u32 = cur.y;
+                if (cur.x < dest.x) {
+                    newx += 1;
+                } else if (cur.x > dest.x) {
+                    newx -= 1;
+                }
+                if (cur.y < dest.y) {
+                    newy += 1;
+                } else if (cur.y > dest.y) {
+                    newy -= 1;
+                }
+                if ((newx != cur.x) or (newy != cur.y)) {
+                    it.cur = Point.init(newx, newy);
+                } else {
+                    it.cur = null;
                 }
             } else if (!it.started) {
                 it.cur = it.line.a;
@@ -69,8 +66,13 @@ const Line = struct {
     };
 
     pub fn iterator(self: Self) Iterator {
+        return .{ .line = &self };
+    }
+
+    pub fn part_1_iterator(self: Self) Iterator {
+        // ignore the line if it's not horizontal or vertical
         if ((self.a.x != self.b.x) and (self.a.y != self.b.y))
-            return .{ .line = &Line.init(self.a, self.a), .started = true }; // ignore the line
+            return .{ .line = &Line.init(self.a, self.a), .started = true };
         return .{ .line = &self };
     }
 
