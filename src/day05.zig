@@ -17,7 +17,7 @@ const Point = struct {
     pub fn init(x: u32, y: u32) Point {
         return Point{ .x = x, .y = y };
     }
-    pub fn from_str(s: []const u8) !Point {
+    pub fn from_str(s: Str) !Point {
         var iter = tokenize(u8, s, " ,");
         return Point.init(
             try parseInt(u32, iter.next().?, 10),
@@ -70,7 +70,7 @@ const Line = struct {
         return .{ .line = &self };
     }
 
-    pub fn from_str(s: []const u8) !Line {
+    pub fn from_str(s: Str) !Line {
         var coord_splitter = split(u8, s, " -> ");
         return Line.init(
             try Point.from_str(coord_splitter.next().?),
@@ -91,8 +91,8 @@ fn floor_raise(map: *FloorMap, pt: Point) !void {
 
 pub fn main() !void {
     print("starting\n", .{});
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var allocator = &arena.allocator;
 
     var floor: FloorMap = FloorMap.init(allocator);
