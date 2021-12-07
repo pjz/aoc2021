@@ -49,11 +49,15 @@ const BingoCard = struct {
         // check for bingo
         if (self.bingo()) {
             self.score = self.calc_score(n);
-            print("bingo! placing {d} score {d}\n", .{ n, self.score });
+            //print("bingo! placing {d} score {d}\n", .{ n, self.score });
         }
     }
 
     pub fn bingo(self: Self) bool {
+        if (self.score != null) {
+            // already scored
+            return true;
+        }
         var i: u3 = 0;
         var all: bool = true;
         // horizontal
@@ -81,27 +85,26 @@ const BingoCard = struct {
             }
             if (all) return true;
         }
-        // down & right
-        i = 0;
-        all = true;
-        while (i < self.vals.len) : (i += 1) {
-            if (!self.checked[i][i]) {
-                all = false;
-                break;
-            }
-        }
-        if (all) return true;
-        // up & right
-        i = 0;
-        all = true;
-        while (i < self.vals.len) : (i += 1) {
-            if (!self.checked[i][self.vals.len - 1 - i]) {
-                all = false;
-                break;
-            }
-        }
-        if (all) return true;
-        return false;
+        // // down & right
+        // i = 0;
+        // all = true;
+        // while (i < self.vals.len) : (i += 1) {
+        //     if (!self.checked[i][i]) {
+        //         all = false;
+        //         break;
+        //     }
+        // }
+        // if (all) return true;
+        // // up & right
+        // i = 0;
+        // all = true;
+        // while (i < self.vals.len) : (i += 1) {
+        //     if (!self.checked[i][self.vals.len - 1 - i]) {
+        //         all = false;
+        //         break;
+        //     }
+        // }
+        return all;
     }
 
     fn calc_score(self: Self, final_num: int) u64 {
@@ -119,7 +122,7 @@ const BingoCard = struct {
                 }
             }
         }
-        print("scoring {d} unchecked total of {d} score {d}\n", .{ unchecked, s, s * final_num });
+        // print("scoring {d} unchecked total of {d} score {d}\n", .{ unchecked, s, s * final_num });
         return s * final_num;
     }
 
@@ -139,41 +142,63 @@ const BingoCard = struct {
 
 const BingoCardList = List(BingoCard);
 
-pub fn main() !void {
+fn load_cards() !BingoCardList {
     var cards = BingoCardList.init(gpa);
-
-    var lines = split(u8, data, "\n");
-    // load numbers, save for later
-    var nums_text = lines.next().?;
+    var blocks = split(u8, data, "\n\n");
+    // skip first block, which is numbers
+    _ = blocks.next().?;
     // load cards
-    while (lines.next()) |line| {
-        if (line.len <= 2) {
-            continue;
-        }
+    while (blocks.next()) |block| {
+        var lines = split(u8, block, "\n");
         var new_card = try BingoCard.init(.{
-            line,
+            lines.next().?,
             lines.next().?,
             lines.next().?,
             lines.next().?,
             lines.next().?,
         });
         try cards.append(new_card);
-        new_card.show();
+        //print("Loaded: \n", .{});
+        //new_card.show();
     }
-    //    if (true) return;
+    return cards;
+}
+
+fn load_nums() Str {
+    var lines = split(u8, data, "\n");
+    return lines.next().?;
+}
+
+pub fn main() !void {
+    var cards = try load_cards();
+    // print("Loaded {d} cards.\n", .{cards.items.len});
+    defer cards.deinit();
+
+    //for (cards.items) |card| {
+    //    card.show();
+    //}
+
     // okay, now iter over numbers
-    var num_iter = split(u8, nums_text, ",");
-    var found_bingo = false;
+    var num_iter = split(u8, load_nums(), ",");
+    var bingos: usize = 0;
     while (num_iter.next()) |num_text| {
         var n = try parseInt(int, num_text, 10);
         print("Placing {d}\n", .{n});
-        for (cards.items) |*card| {
-            card.mark(n);
-            card.show();
-            if (card.score) |score| {
-                found_bingo = true;
-                print("Found bingo with score: {d}\n", .{score});
-                return;
+        var marked = false;
+        while (!marked) {
+            for (cards.items) |*next_card, card_i| {
+                var card = next_card;
+                card.mark(n);
+                if (card.score) |score| {
+                    bingos += 1;
+                    print("Found bingo #{d} with score {d}\n", .{ bingos, score });
+                    card.show();
+                    _ = cards.swapRemove(card_i);
+                    print("{d} cards still playing.\n", .{cards.items.len});
+                    break;
+                }
+            } else {
+                marked = true;
             }
         }
     }

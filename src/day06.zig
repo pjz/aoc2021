@@ -11,8 +11,31 @@ const gpa = util.gpa;
 
 const data = @embedFile("../data/day06.txt");
 
+const int = usize;
+
 pub fn main() !void {
-    
+    var buckets = [1]int{0} ** 9;
+
+    var numtext = tokenize(u8, data, ",\n");
+
+    while (numtext.next()) |ntext| {
+        var n = try parseInt(usize, ntext, 10);
+        buckets[n] += 1;
+    }
+
+    //var days: int = 80;
+    var days: int = 256;
+    while (days > 0) : (days -= 1) {
+        std.mem.rotate(int, &buckets, 1);
+        buckets[6] += buckets[8];
+    }
+
+    var total: int = 0;
+    for (buckets) |b| {
+        total += b;
+    }
+
+    print("80 days: {d}\n", .{total});
 }
 
 // Useful stdlib functions
